@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SSO 认证中心 - 登录</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .login-container {
+            background: #fff;
+            border-radius: 12px;
+            padding: 40px;
+            width: 380px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+        }
+        .login-container h2 {
+            text-align: center;
+            margin-bottom: 8px;
+            color: #333;
+            font-size: 22px;
+        }
+        .login-container .subtitle {
+            text-align: center;
+            color: #999;
+            font-size: 13px;
+            margin-bottom: 28px;
+        }
+        .form-group {
+            margin-bottom: 18px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            color: #555;
+            font-size: 14px;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .form-group input:focus {
+            border-color: #667eea;
+        }
+        .error-msg {
+            color: #e74c3c;
+            font-size: 13px;
+            margin-bottom: 12px;
+            text-align: center;
+        }
+        .btn-login {
+            width: 100%;
+            padding: 11px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            font-size: 15px;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        .btn-login:hover { opacity: 0.9; }
+
+        /* 分割线 */
+        .divider {
+            display: flex;
+            align-items: center;
+            margin: 24px 0 18px;
+            color: #bbb;
+            font-size: 12px;
+        }
+        .divider::before, .divider::after {
+            content: "";
+            flex: 1;
+            height: 1px;
+            background: #eee;
+        }
+        .divider span { margin: 0 12px; }
+
+        /* 第三方登录按钮 */
+        .third-party-login {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .third-party-login a {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            text-decoration: none;
+            color: #333;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        .third-party-login a:hover {
+            border-color: #667eea;
+            background: #f8f9ff;
+        }
+        /* GitHub 按钮颜色 */
+        .third-party-login .btn-github:hover { background: #f0f0f0; border-color: #333; }
+        /* 微信按钮颜色 */
+        .third-party-login .btn-wechat:hover { background: #e8fce8; border-color: #07c160; color: #07c160; }
+        /* QQ 按钮颜色 */
+        .third-party-login .btn-qq:hover { background: #e8f3ff; border-color: #12b7f5; color: #12b7f5; }
+    </style>
+</head>
+<body>
+
+<div class="login-container">
+    <h2>SSO 认证中心</h2>
+    <p class="subtitle">登录后即可访问所有已接入的应用</p>
+
+    <!-- 错误提示 -->
+    <div th:if="${param.error}" class="error-msg">
+        用户名或密码错误，请重试
+    </div>
+    <!-- 注销成功提示 -->
+    <div th:if="${param.logout}" class="error-msg" style="color:#27ae60;">
+        您已成功退出登录
+    </div>
+
+    <!-- 账号密码登录表单 -->
+    <form th:action="@{/login}" method="post">
+        <div class="form-group">
+            <label for="username">用户名</label>
+            <input type="text" id="username" name="username"
+                   placeholder="请输入用户名" required autofocus>
+        </div>
+        <div class="form-group">
+            <label for="password">密码</label>
+            <input type="password" id="password" name="password"
+                   placeholder="请输入密码" required>
+        </div>
+        <button type="submit" class="btn-login">登 录</button>
+    </form>
+
+    <!-- 第三方登录 -->
+    <div class="divider"><span>或使用第三方账号登录</span></div>
+    <div class="third-party-login">
+        <!--
+          第三方 OAuth2 登录路由由 Spring Security 自动生成：
+          /oauth2/authorization/{registrationId}
+          registrationId 对应 application.yml 中的配置 key（github、wechat、qq）
+        -->
+        <a th:href="@{/oauth2/authorization/github}" class="btn-github">
+            🔗 GitHub 登录
+        </a>
+        <a th:href="@{/oauth2/authorization/wechat}" class="btn-wechat">
+            💬 微信登录
+        </a>
+        <a th:href="@{/oauth2/authorization/qq}" class="btn-qq">
+            🐧 QQ 登录
+        </a>
+    </div>
+</div>
+
+</body>
+</html>

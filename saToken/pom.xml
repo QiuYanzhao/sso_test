@@ -17,7 +17,23 @@
   <dependencies>
     <dependency>
       <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-starter</artifactId>
+      <artifactId>spring-boot-starter-web</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-thymeleaf</artifactId>
+    </dependency>
+    <!-- Sa-Token 核心：轻量级 Java 权限认证框架 -->
+    <dependency>
+      <groupId>cn.dev33</groupId>
+      <artifactId>sa-token-spring-boot-starter</artifactId>
+      <version>1.37.0</version>
+    </dependency>
+    <!-- Sa-Token SSO 插件：单点登录能力 -->
+    <dependency>
+      <groupId>cn.dev33</groupId>
+      <artifactId>sa-token-sso</artifactId>
+      <version>1.37.0</version>
     </dependency>
 
     <dependency>

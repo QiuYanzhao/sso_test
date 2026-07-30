@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>客户端应用 - 首页</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #f5f5f5;
+            min-height: 100vh;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+            padding: 16px 32px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header h1 { font-size: 18px; }
+        .header .user-info { font-size: 14px; }
+        .header .btn-logout {
+            background: rgba(255,255,255,0.2);
+            color: #fff;
+            border: 1px solid rgba(255,255,255,0.3);
+            padding: 6px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            text-decoration: none;
+        }
+        .header .btn-logout:hover { background: rgba(255,255,255,0.3); }
+        .container {
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+        .card {
+            background: #fff;
+            border-radius: 8px;
+            padding: 24px;
+            margin-bottom: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        .card h3 { margin-bottom: 12px; color: #333; font-size: 16px; }
+        .card p { color: #666; font-size: 14px; line-height: 1.6; }
+        .card .token-value {
+            background: #f0f0f0;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+            word-break: break-all;
+            margin-top: 8px;
+            color: #555;
+        }
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 11px;
+            background: #e8f5e9;
+            color: #2e7d32;
+            margin-left: 8px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h1>客户端应用 <span class="badge">已接入 SSO</span></h1>
+    <div class="user-info">
+        当前用户：<strong th:text="${loginId}">admin</strong>
+        <a th:href="@{/sso/logout}" class="btn-logout">退出登录</a>
+    </div>
+</div>
+
+<div class="container">
+    <div class="card">
+        <h3>欢迎，<span th:text="${loginId}">admin</span>！</h3>
+        <p>您已通过 <strong>Sa-Token SSO 单点登录</strong>完成认证。当前页面为受保护的客户端资源，未登录用户将被自动重定向到认证中心。</p>
+    </div>
+
+    <div class="card">
+        <h3>当前 Token 信息</h3>
+        <div class="token-value" th:text="${tokenValue}">sso-token-value</div>
+        <p style="margin-top:8px;">
+            此 Token 用于标识当前会话。客户端应用通过拦截器（SaInterceptor）校验 Token 有效性。
+            若 Token 过期或不存在，用户将被重定向到 SSO 认证中心重新登录。
+        </p>
+    </div>
+
+    <div class="card">
+        <h3>SSO 单点登录说明</h3>
+        <p>
+            <strong>模式：</strong>Sa-Token SSO 模式三（Http 请求调用）<br>
+            <strong>认证中心：</strong>http://localhost:8080<br>
+            <strong>当前客户端：</strong>端口 8081<br><br>
+            <strong>体验单点登录：</strong><br>
+            1. 在另一个浏览器窗口启动第二个客户端（端口 8082）<br>
+            2. 访问 http://localhost:8082，将自动识别已在认证中心登录，无需重新输入密码<br>
+            3. 如果在任一客户端退出，所有客户端同时退出（单点注销 SLO）
+        </p>
+    </div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SSO 认证中心 - 第三方登录</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .login-container {
+            background: #fff;
+            border-radius: 12px;
+            padding: 40px;
+            width: 380px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+        }
+        .login-container h2 {
+            text-align: center;
+            margin-bottom: 8px;
+            color: #333;
+            font-size: 22px;
+        }
+        .login-container .subtitle {
+            text-align: center;
+            color: #999;
+            font-size: 13px;
+            margin-bottom: 8px;
+        }
+        .back-link {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+        .back-link a {
+            color: #667eea;
+            font-size: 13px;
+            text-decoration: none;
+        }
+        .back-link a:hover { text-decoration: underline; }
+
+        .third-party-login {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .third-party-login a {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 12px;
+            border: 2px solid #eee;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 15px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        /* GitHub */
+        .btn-github {
+            color: #333;
+            background: #f8f8f8;
+        }
+        .btn-github:hover {
+            background: #333;
+            color: #fff;
+            border-color: #333;
+        }
+        /* 微信 */
+        .btn-wechat {
+            color: #07c160;
+            background: #f0fdf4;
+        }
+        .btn-wechat:hover {
+            background: #07c160;
+            color: #fff;
+            border-color: #07c160;
+        }
+        /* QQ */
+        .btn-qq {
+            color: #12b7f5;
+            background: #f0f7ff;
+        }
+        .btn-qq:hover {
+            background: #12b7f5;
+            color: #fff;
+            border-color: #12b7f5;
+        }
+
+        .divider {
+            display: flex;
+            align-items: center;
+            margin: 24px 0 18px;
+            color: #bbb;
+            font-size: 12px;
+        }
+        .divider::before, .divider::after {
+            content: "";
+            flex: 1;
+            height: 1px;
+            background: #eee;
+        }
+        .divider span { margin: 0 12px; }
+
+        .info-box {
+            background: #f8f9ff;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 12px;
+            margin-top: 20px;
+            font-size: 12px;
+            color: #666;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+
+<div class="login-container">
+    <h2>选择登录方式</h2>
+    <p class="subtitle">SSO 认证中心</p>
+    <div class="back-link">
+        <a th:href="@{/sso/auth(redirect=${redirect})}">← 使用账号密码登录</a>
+    </div>
+
+    <!-- 第三方平台登录按钮 -->
+    <!--
+      点击后跳转到 SSO Server 的第三方认证入口：
+      /sso/third-auth/{platform}?redirect=原始客户端回调地址
+      Server 端再根据 platform 重定向到对应的 OAuth 平台授权页
+    -->
+    <div class="third-party-login">
+        <a th:href="@{/sso/third-auth/github(redirect=${redirect})}" class="btn-github">
+            GitHub 登录
+        </a>
+        <a th:href="@{/sso/third-auth/wechat(redirect=${redirect})}" class="btn-wechat">
+            微信登录
+        </a>
+        <a th:href="@{/sso/third-auth/qq(redirect=${redirect})}" class="btn-qq">
+            QQ 登录
+        </a>
+    </div>
+
+    <div class="divider"><span>说明</span></div>
+    <div class="info-box">
+        <strong>GitHub 登录：</strong>通过标准 OAuth2 协议接入，开箱即用。<br><br>
+        <strong>微信/QQ 登录：</strong>需注册开放平台应用获取 AppID/AppSecret。<br>
+        本演示中回调地址为 <code>/sso/third-auth/wechat/callback</code>。
+    </div>
+</div>
+
+</body>
+</html>

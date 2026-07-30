@@ -1,0 +1,44 @@
+spring:
+  application:
+    name: sso-demo
+  thymeleaf:
+    cache: false
+    prefix: classpath:/templates/
+
+# ===== Sa-Token 核心配置 =====
+sa-token:
+  token-name: sso-token
+  # Token 有效期：3 天（生产环境按需调整）
+  timeout: 259200
+  # 无操作最大有效期：-1 表示不限制
+  activity-timeout: -1
+  # 是否允许多地登录
+  is-concurrent: true
+  # 是否输出操作日志
+  is-log: true
+  # 是否从 Cookie 读取 Token（调试时关闭方便在 URL 传参）
+  is-read-cookie: true
+
+  # ===== Sa-Token SSO 配置（模式三：Http 请求调用）=====
+  sso:
+    # 启用 SSO 功能
+    enable: true
+    # 认证中心地址（Server 和 Client 都指向同一个地址）
+    auth-url: http://localhost:8080
+    # Ticket 有效时间（秒），临时凭证，建议 3-5 分钟
+    ticket-timeout: 300
+    # 启用 Http 模式（模式三）：服务端间通过 Http API 校验 ticket
+    is-http: true
+    # 启用单点注销（一个客户端退出，通知所有客户端退出）
+    is-slo: true
+    # 校验签名（防止伪造请求）
+    is-v-mode: true
+    # SSO API 调用密钥（Server 和 Client 必须一致）
+    secret-key: my-sso-secret-key-2024
+    # 允许授权的回调地址白名单（逗号分隔，只有 Server 使用）
+    allow-url: http://localhost:8081/sso/login,http://localhost:8082/sso/login
+
+logging:
+  level:
+    cn.dev33: DEBUG          # SaToken 日志
+    com.example: DEBUG       # 业务日志
