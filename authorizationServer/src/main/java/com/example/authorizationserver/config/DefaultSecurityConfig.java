@@ -5,7 +5,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -27,7 +26,6 @@ import org.springframework.security.web.SecurityFilterChain;
  * 本配置的优先级低于 AuthorizationServerConfig，
  * 负责处理非 OAuth2 端点的安全（登录页、静态资源等）。
  */
-@EnableWebSecurity
 @Configuration(proxyBeanMethods = false)
 public class DefaultSecurityConfig {
 
@@ -91,7 +89,7 @@ public class DefaultSecurityConfig {
         http
             .authorizeRequests(authorizeRequests ->
                 authorizeRequests
-                    .antMatchers("/login", "/static/**", "/favicon.ico").permitAll()
+                    .antMatchers("/login", "/static/**", "/favicon.ico", "/error").permitAll()
                     .antMatchers("/oauth2/authorization/**").permitAll()  // 第三方登录入口
                     .anyRequest().authenticated()
             )
@@ -110,7 +108,9 @@ public class DefaultSecurityConfig {
                         // 使用自定义 UserService 处理第三方返回的用户信息
                         .userService(thirdPartyUserService)
             )
-            // 注销配置
+            .sessionManagement(session -> session
+                .sessionFixation().none()
+            )
             .logout(logout ->
                 logout
                     .logoutUrl("/logout")
