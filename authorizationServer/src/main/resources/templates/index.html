@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>SSO 认证中心</title>
+</head>
+<body style="font-family: sans-serif; max-width: 600px; margin: 60px auto; padding: 20px;">
+    <h2>SSO 认证中心</h2>
+    <p>你已成功登录认证中心。</p>
+    <p>当前用户：<strong th:text="${#authentication.name}">admin</strong></p>
+    <p>这是 Spring Authorization Server (OIDC) SSO 方案的服务端。</p>
+    <ul>
+        <li><a th:href="@{/login}">登录页</a></li>
+        <li><a th:href="@{/logout}">退出登录</a></li>
+    </ul>
+    <hr>
+    <p>OIDC 发现端点：<a th:href="@{/.well-known/openid-configuration}">/.well-known/openid-configuration</a></p>
+</body>
+</html>

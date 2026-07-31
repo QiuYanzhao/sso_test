@@ -2,15 +2,16 @@
 
 ## 一、方案概述
 
-本方案基于 **Spring Authorization Server 0.2.3** 构建符合 **OAuth 2.1 / OIDC 1.0** 标准的单点登录（SSO）认证中心。采用经典的 **授权码模式（Authorization Code Flow + PKCE）** 作为核心认证流程，实现一个认证中心对多个客户端应用的统一认证。
+本方案基于 **Spring Authorization Server 0.2.3** 构建符合 **OAuth 2.1 / OIDC 1.0** 标准的单点登录（SSO）认证中心。采用经典的 **授权码模式（Authorization Code Flow）** 作为核心认证流程，实现一个认证中心对多个客户端应用的统一认证。
 
-### 核心组件
+### 核心角色
 
 | 角色 | 说明 | 对应模块 |
 |------|------|----------|
-| **Authorization Server** | 认证授权中心，负责用户登录、颁发 Token | 本项目：`authorizationServer` |
-| **Client Application** | 接入 SSO 的业务应用 | 独立客户端（可由本项目扩展） |
-| **Resource Server** | 受保护的资源服务，验证 Token | 集成在客户端中 |
+| **Authorization Server** | 认证中心，负责用户登录、颁发 Token | `authorizationServer` (端口 8080) |
+| **OIDC Client** | 接入 SSO 的业务应用 | `oidc-client` (端口 8081) |
+
+认证中心和客户端位于独立的 Maven 模块中，通过 OAuth2/OIDC 协议交互。
 
 ---
 
@@ -22,77 +23,101 @@
 | Spring Security | 5.6.x | 安全框架 |
 | Spring Authorization Server | 0.2.3 | OAuth2/OIDC 认证授权服务器 |
 | Nimbus JOSE + JWT | 9.37.2 | JWT 生成与解析 |
-| Spring Security OAuth2 Client | 5.6.x | 客户端集成 OAuth2 |
+| Spring Security OAuth2 Client | 5.6.x | 客户端集成 OAuth2（Server 端用于第三方登录，Client 端用于接入 SSO） |
 | Thymeleaf | - | 登录页面渲染 |
+| thymeleaf-extras-springsecurity5 | - | Thymeleaf 模板中 #authentication 等安全表达式 |
 
 ---
 
-## 三、项目包结构设计
+## 三、项目包结构
+
+### 认证中心（authorizationServer 模块）
 
 ```
-com.example.authorizationserver
-├── AuthorizationServerApplication.java          # 启动类
+com.example.authorizationserver/
+├── AuthorizationServerApplication.java      # Server 启动类 (端口 8080)
 ├── config/
-│   ├── AuthorizationServerConfig.java           # 认证服务器核心配置
-│   ├── SecurityConfig.java                      # Spring Security 全局安全配置
-│   ├── DefaultSecurityConfig.java               # 默认安全链（登录表单等）
-│   └── JwkConfig.java                           # JWK 密钥配置
+│   ├── AuthorizationServerConfig.java       # 【核心】OAuth2 服务器配置 + ProviderSettings
+│   ├── DefaultSecurityConfig.java           # 表单登录 + 第三方 OAuth2 登录
+│   ├── JwkConfig.java                       # JWK 密钥配置
+│   └── OAuth2ThirdPartyConfig.java          # 第三方登录扩展说明
+├── controller/
+│   └── PageController.java                  # 页面路由 (/login、/)
 ├── jose/
-│   └── Jwks.java                                # JWK 密钥生成工具类
-├── user/
-│   ├── UserController.java                      # 用户信息端点（/userinfo）
-│   └── UserInfo.java                            # 用户信息实体
-└── client/
-    └── ClientConfig.java                        # OAuth2 客户端注册配置
+│   └── Jwks.java                            # RSA 密钥生成工具
+└── service/
+    └── ThirdPartyUserService.java           # 第三方用户信息处理
+```
+
+### OIDC 客户端（oidc-client 模块）
+
+```
+com.example.oidcclient/
+├── OidcClientApplication.java              # Client 启动类 (端口 8081)
+├── config/
+│   └── ClientSecurityConfig.java            # ClientRegistration + oauth2Login()
+└── controller/
+    └── HomeController.java                  # 首页（展示 OIDC 用户信息）
 ```
 
 ---
 
 ## 四、认证授权流程图
 
-### 4.1 OIDC 授权码流程（Authorization Code Flow）
+### 4.1 OIDC 授权码流程（Client → Server → Client）
 
 ```
 ┌──────────────┐           ┌───────────────────┐           ┌───────────────────┐
-│   用户浏览器   │           │   客户端应用(Client) │           │  认证中心(Server)  │
+│   用户浏览器   │           │   Client (8081)    │           │   Server (8080)   │
 └──────┬───────┘           └─────────┬─────────┘           └─────────┬─────────┘
        │                             │                               │
-       │  ① 访问客户端受保护资源        │                               │
+       │  ① 访问 http://localhost:8081│                               │
        │ ──────────────────────────>  │                               │
        │                             │                               │
-       │  ② 重定向到认证中心登录页       │                               │
+       │  ② 未登录，302 重定向         │                               │
+       │     /oauth2/authorize?       │                               │
+       │     client_id=app-client-1   │                               │
+       │     redirect_uri=...         │                               │
+       │     response_type=code       │                               │
+       │     scope=openid profile     │                               │
        │ <───────────────────────────│                               │
        │                             │                               │
        │  ③ GET /oauth2/authorize?   │                               │
-       │    client_id=xxx            │                               │
-       │    redirect_uri=xxx         │                               │
-       │    response_type=code       │                               │
-       │    scope=openid profile     │                               │
+       │     (跟随上一步的 302)        │                               │
        │ ──────────────────────────────────────────────────────>    │
        │                             │                               │
-       │  ④ 返回登录页面              │                               │
+       │  ④ 返回登录页面 /login       │                               │
        │ <──────────────────────────────────────────────────────    │
        │                             │                               │
-       │  ⑤ POST /login (用户名/密码) │                               │
+       │  ⑤ POST /login (admin/123456)                               │
        │ ──────────────────────────────────────────────────────>    │
        │                             │                               │
-       │  ⑥ 认证成功后重定向          │                               │
-       │    redirect_uri?code=xxx    │                               │
+       │  ⑥ 认证成功，302 重定向       │                               │
+       │     http://localhost:8081/   │                               │
+       │     login/oauth2/code/       │                               │
+       │     app-client?code=XXXX     │                               │
        │ <──────────────────────────────────────────────────────    │
        │                             │                               │
-       │  ⑦ 携带 code 重定向回客户端   │                               │
+       │  ⑦ 携带 code 访问客户端回调    │                               │
+       │     GET /login/oauth2/code/  │                               │
+       │     app-client?code=XXXX     │                               │
        │ ──────────────────────────>  │                               │
-       │                             │  ⑧ POST /oauth2/token        │
-       │                             │     code + client_secret      │
+       │                             │                               │
+       │                             │  ⑧ Server 端：POST /oauth2/token
+       │                             │     code + client_secret       │
+       │                             │     (后端对后端，不经过浏览器)    │
        │                             │ ────────────────────────────> │
        │                             │                               │
        │                             │  ⑨ 返回 access_token          │
        │                             │    + id_token + refresh_token │
        │                             │ <──────────────────────────── │
        │                             │                               │
-       │  ⑩ 首页（已登录）             │                               │
+       │                             │  ⑩ 客户端完成登录              │
+       │  ⑪ 302 到首页 /              │                               │
        │ <───────────────────────────│                               │
        │                             │                               │
+       │  ⑫ 显示 client-home.html    │                               │
+       │     (已登录，含 OIDC 用户信息)  │                               │
 ```
 
 ### 4.2 单点登录（SSO）会话共享流程
@@ -105,35 +130,29 @@ com.example.authorizationserver
        │ ①登录应用A     │              │                      │
        │─────────────>│              │                      │
        │              │ ②未登录，重定向 │                      │
-       │<─────────────│              │                      │
        │              │              │                      │
        │ ③跳转认证中心   │              │                      │
        │──────────────────────────────────────────────────>│
        │              │              │   ④输入用户名/密码       │
-       │<──────────────────────────────────────────────────│
        │              │              │   ⑤创建 Session        │
-       │              │              │                      │
-       │ ⑥重定向(code) │              │                      │
+       │              │              │     (JSESSIONID Cookie) │
+       │ ⑥重定向(code)  │              │                      │
        │─────────────>│              │                      │
-       │              │ ⑦用code换token │                      │
-       │              │─────────────────────────────────────>│
-       │              │<─────────────────────────────────────│
-       │              │ ⑧登录成功      │                      │
+       │              │ ⑦换token，登录 │                      │
        │              │              │                      │
-       │ ⑨访问应用B     │              │                      │
+       │ ⑧访问应用B     │              │                      │
        │─────────────────────────────>│                      │
-       │              │              │ ⑩未登录，重定向          │
-       │<─────────────────────────────│                      │
+       │              │              │ ⑨未登录，重定向          │
        │              │              │                      │
-       │ ⑪跳转认证中心   │              │                      │
+       │ ⑩跳转认证中心   │              │                      │
        │──────────────────────────────────────────────────>│
-       │              │              │  ⑫ 已有 Session，      │
-       │              │              │     直接授权           │
-       │<──────────────────────────────────────────────────│
+       │              │              │  ⑪ 已有 Session！      │
+       │              │              │     (浏览器携带 Cookie)  │
+       │              │              │     直接颁发 code       │
        │              │              │                      │
-       │ ⑬重定向(code)  │              │                      │
+       │ ⑫重定向(code)  │              │                      │
        │─────────────────────────────>│                      │
-       │              │              │ ⑭换token，登录成功      │
+       │              │              │ ⑬换token，登录成功      │
 ```
 
 ---
@@ -176,6 +195,13 @@ public class AuthorizationServerConfig {
      * 4. 客户端认证方式：client_secret_basic / client_secret_post
      */
     // implementation: SecurityFilterChain
+
+    /**
+     * ProviderSettings：认证中心元数据配置（0.2.3 使用此 API）
+     * - issuer：可显式指定，默认为请求根路径
+     * - 生产环境建议：.issuer("https://sso.example.com")
+     */
+    // implementation: ProviderSettings Bean
 }
 ```
 
@@ -186,13 +212,13 @@ public class AuthorizationServerConfig {
 @Bean
 public RegisteredClientRepository registeredClientRepository() {
     RegisteredClient client = RegisteredClient.withId(UUID.randomUUID().toString())
-            .clientId("app-client")                              // 客户端 ID
-            .clientSecret("{noop}secret")                        // 客户端密钥
+            .clientId("app-client-1")                           // 客户端 ID
+            .clientSecret("{noop}secret1")                      // 客户端密钥
             .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
             .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
             .authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)
             .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
-            .redirectUri("http://127.0.0.1:8081/login/oauth2/code/app-client") // 回调地址
+            .redirectUri("http://localhost:8081/login/oauth2/code/app-client") // 回调地址
             .scope(OidcScopes.OPENID)                            // OIDC 必需
             .scope(OidcScopes.PROFILE)                           // 获取用户基本信息
             .scope("read")
@@ -230,7 +256,7 @@ public RegisteredClientRepository registeredClientRepository() {
 ```java
 /**
  * JWK (JSON Web Key) 用于对 JWT 进行签名，是 OIDC 标准的一部分。
- * 对外暴露 /oauth2/jwks 端点供资源服务器验证 token 真伪。
+ * 对外暴露 /oauth2/jwks 端点供客户端解析 token 签名。
  *
  * KeyPair 生成方式：
  * - 开发环境：使用 JDK KeyPairGenerator 生成 RSA 2048 位密钥对
@@ -239,69 +265,84 @@ public RegisteredClientRepository registeredClientRepository() {
 // implementation: JWKSource<SecurityContext>
 ```
 
-### 5.5 Spring Security 主安全配置
+### 5.5 页面路由配置
 
 ```java
 /**
- * 职责：
- * 1. 配置 formLogin：自定义登录页面、登录处理 URL
- * 2. 放行静态资源和公开端点
- * 3. 放行 /oauth2/** 认证端点（由 AuthorizationServerConfig 保护）
- * 4. 配置 CSRF（通常对 /oauth2/** 放行）
+ * Spring Security 的 formLogin().loginPage("/login") 不会自动创建 GET 路由。
+ * 需要手动提供 Controller 将请求映射到 Thymeleaf 模板。
+ *
+ * PageController 提供：
+ * - GET /login → templates/login.html
+ * - GET /      → templates/index.html
  */
-// implementation: SecurityFilterChain
 ```
 
 ---
 
 ## 六、接入客户端（Client Application）配置要点
 
-客户端应用如何接入本 SSO 认证中心（以 Spring Boot 为例）：
+客户端如何接入本 SSO 认证中心（Spring Boot + spring-boot-starter-oauth2-client）：
 
-### 6.1 依赖
-
-```xml
-<dependency>
-    <groupId>org.springframework.boot</groupId>
-    <artifactId>spring-boot-starter-oauth2-client</artifactId>
-</dependency>
-```
-
-### 6.2 application.yml 配置
-
-```yaml
-spring:
-  security:
-    oauth2:
-      client:
-        registration:
-          app-client:
-            client-id: app-client
-            client-secret: secret
-            client-name: SSO Client
-            provider: sso-provider
-            scope: openid,profile
-            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
-            authorization-grant-type: authorization_code
-        provider:
-          sso-provider:
-            issuer-uri: http://localhost:8080    # 认证中心地址
-```
-
-### 6.3 客户端安全配置
+### 6.1 客户端注册（ClientRegistrationRepository）
 
 ```java
-// 核心配置：oauth2Login() 拦截所有需要认证的请求，自动跳转到认证中心
-@Configuration
-@EnableWebSecurity
-public class ClientSecurityConfig {
-    // implementation: SecurityFilterChain with oauth2Login()
+@Bean
+public ClientRegistrationRepository clientRegistrationRepository() {
+    ClientRegistration client = ClientRegistration
+            .withRegistrationId("app-client")
+            .clientId("app-client-1")           // 与 Server 的 RegisteredClient 一致
+            .clientSecret("secret1")
+            .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
+            .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
+            .redirectUri("{baseUrl}/login/oauth2/code/{registrationId}")
+            .scope("openid", "profile", "email")
+            .authorizationUri("http://localhost:8080/oauth2/authorize")
+            .tokenUri("http://localhost:8080/oauth2/token")
+            .userInfoUri("http://localhost:8080/userinfo")
+            .jwkSetUri("http://localhost:8080/oauth2/jwks")
+            .userNameAttributeName(IdTokenClaimNames.SUB)
+            .clientName("SSO Client")
+            .build();
+    return new InMemoryClientRegistrationRepository(client);
+}
+```
+
+### 6.2 客户端安全配置
+
+```java
+@Bean
+public SecurityFilterChain clientSecurityFilterChain(HttpSecurity http) throws Exception {
+    http
+        .authorizeRequests(authorize ->
+            authorize.anyRequest().authenticated()
+        )
+        // 核心：oauth2Login() 自动触发 OIDC 授权码流程
+        .oauth2Login(oauth2 ->
+            oauth2.defaultSuccessUrl("/", true)
+        );
+    return http.build();
+}
+```
+
+### 6.3 获取 OIDC 用户信息
+
+```java
+@GetMapping("/")
+public String home(@AuthenticationPrincipal OidcUser principal, Model model) {
+    // OidcUser 由 Spring Security 自动注入
+    // 包含 id_token 的所有 claims（sub, email, name, ...）
+    model.addAttribute("name", principal.getFullName());
+    model.addAttribute("subject", principal.getSubject());
+    model.addAttribute("claims", principal.getClaims());
+    model.addAttribute("idToken", principal.getIdToken().getTokenValue());
+    return "client-home";
 }
 ```
 
 ---
 
-## 七、OIDC 标准端点一览
+## 七、OIDC 标准端点一览（认证中心）
 
 | 端点 | 路径 | 说明 |
 |------|------|------|
@@ -319,8 +360,8 @@ public class ClientSecurityConfig {
 
 | Token | 说明 |
 |-------|------|
-| **access_token** | 访问令牌，携带在请求中访问受保护资源，JWT 格式，默认 2 小时有效 |
-| **id_token** | OIDC 身份令牌，JWT 格式，包含用户身份声明（claims），用于客户端获取用户信息 |
+| **access_token** | 访问令牌，JWT 格式，默认 2 小时有效，用于访问受保护资源 |
+| **id_token** | OIDC 身份令牌，JWT 格式，包含用户身份声明（claims），客户端用于获取用户信息 |
 | **refresh_token** | 刷新令牌，用于在 access_token 过期后获取新的 access_token，默认 30 天有效 |
 
 ---
@@ -335,19 +376,27 @@ public class ClientSecurityConfig {
 注意：这要求客户端受信任，不适用于第三方应用场景。
 ```
 
-### 9.2 为什么使用 PKCE
-```
-即使是授权码模式，在 SPA / 移动端等公开客户端中，推荐启用 PKCE
-（Proof Key for Code Exchange），防止授权码拦截攻击。
-通过 requireProofKey(true) 开启。
-```
-
-### 9.3 Session 生命周期
+### 9.2 Session 生命周期
 ```
 认证中心 session 过期 ≠ Token 过期：
 - 认证中心 session 控制"是否需要重新输入用户名密码"
 - Token 内省 (introspection) 控制"API 能否访问"
 - SSO 退出：需要清理认证中心 session + 通知所有客户端清理本地 token
+```
+
+### 9.3 组件扫描隔离
+```
+Server 和 Client 在同一项目但不同包路径：
+- AuthorizationServerApplication 在 com.example.authorizationserver，扫描所有子包
+- SsoClientApp 在 com.example.authorizationserver.sso_client（带 scanBasePackages），
+  仅扫描 sso_client 包，避免加载 Server 配置
+```
+
+### 9.4 第三方登录支持
+```
+- GitHub：标准 OAuth2，开箱即用（Spring Security 内置 GitHub provider）
+- 微信/QQ：非标准 OAuth2，代码中有完整的手动实现示例（OAuth2ThirdPartyConfig.java）
+- 推荐生产方案：使用 JustAuth（封装了数十个平台）
 ```
 
 ---
@@ -356,14 +405,21 @@ public class ClientSecurityConfig {
 
 | 文件 | 说明 |
 |------|------|
-| `AuthorizationServerApplication.java` | Spring Boot 启动类 |
-| `config/AuthorizationServerConfig.java` | 认证服务器核心：客户端注册、OIDC 配置、端点配置 |
-| `config/DefaultSecurityConfig.java` | Spring Security 表单登录、CSRF 等全局安全配置 |
-| `config/JwkConfig.java` | JWK 密钥对配置，Bean 申明 |
-| `jose/Jwks.java` | RSA 密钥生成工具类 |
-| `user/UserController.java` | 自定义 /userinfo 端点 |
-| `user/UserInfo.java` | OIDC 标准用户信息实体 |
-| `application.yml` | 服务端口、日志等基础配置 |
+| `AuthorizationServerApplication.java` | Server 启动类（端口 8080） |
+| `config/AuthorizationServerConfig.java` | 认证服务器核心：客户端注册、OIDC 配置、ProviderSettings |
+| `config/DefaultSecurityConfig.java` | 表单登录、本地用户、第三方 OAuth2 配置 |
+| `config/JwkConfig.java` | JWK 密钥对 Bean 注册 |
+| `config/OAuth2ThirdPartyConfig.java` | 第三方登录扩展说明（含 JustAuth 示例） |
+| `controller/PageController.java` | 页面路由（/login → login.html） |
+| `jose/Jwks.java` | RSA 密钥生成工具 |
+| `service/ThirdPartyUserService.java` | 第三方用户信息处理 |
+| `sso_client/SsoClientApp.java` | Client 启动类（端口 8081） |
+| `sso_client/config/ClientSecurityConfig.java` | 客户端 OAuth2 配置（ClientRegistration + oauth2Login） |
+| `sso_client/controller/HomeController.java` | 客户端首页（展示 OIDC claims） |
+| `application.yml` | 服务端口、第三方登录配置 |
+| `templates/login.html` | 登录页面（含第三方按钮） |
+| `templates/index.html` | 认证中心首页 |
+| `templates/client-home.html` | 客户端首页（展示 id_token） |
 
 ---
 

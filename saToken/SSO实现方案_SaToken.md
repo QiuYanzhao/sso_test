@@ -6,10 +6,10 @@
 
 ### 核心角色
 
-| 角色 | 说明 | 模块示例 |
+| 角色 | 说明 | 对应模块 |
 |------|------|----------|
-| **SSO Server** | 认证中心，统一处理登录、注册、Token 颁发 | `saToken/sso-server/` |
-| **SSO Client** | 接入 SSO 的业务应用，委托认证中心完成认证 | `saToken/sso-client/` |
+| **SSO Server** | 认证中心，统一处理登录、注册、Token 颁发 | `saToken` (端口 8080) |
+| **SSO Client** | 接入 SSO 的业务应用，委托认证中心完成认证 | `sso-client` (端口 8081) |
 | **Ticket** | 临时凭证，客户端凭 ticket 到认证中心换取 Token | — |
 
 ---
@@ -53,33 +53,31 @@
 
 ## 三、项目包结构设计
 
+### 认证中心（saToken 模块）
+
 ```
-com.example.satoken
-├── SaTokenApplication.java                        # 启动类
-│
-├── sso/
-│   ├── server/                                     # === SSO 认证中心 ===
-│   │   ├── SsoServerApp.java                       # 认证中心启动类（独立运行）
-│   │   ├── config/
-│   │   │   └── SaTokenSsoServerConfig.java         # SSO Server 配置
-│   │   ├── controller/
-│   │   │   ├── SsoServerController.java            # 登录页面、登录/登出接口
-│   │   │   └── SsoServerAuthController.java        # 认证回调、Ticket 校验
-│   │   └── auth/
-│   │       └── SsoServerAuthService.java            # 自定义认证逻辑
-│   │
-│   ├── client/                                     # === SSO 客户端 ===
-│   │   ├── SsoClientApp.java                       # 客户端启动类（独立运行）
-│   │   ├── config/
-│   │   │   └── SaTokenSsoClientConfig.java         # SSO Client 配置
-│   │   ├── controller/
-│   │   │   ├── HomeController.java                 # 客户端首页（受保护）
-│   │   │   └── SsoClientController.java            # 客户端回调、登出
-│   │   └── interceptor/
-│   │       └── SsoClientInterceptor.java           # SSO 路由拦截器
-│   │
-│   └── common/                                     # === 公共模块 ===
-│       └── SsoConst.java                           # SSO 常量定义
+com.example.satoken.sso/
+├── SsoConst.java                                   # SSO 常量 + 第三方平台参数
+└── server/                                         # === SSO 认证中心 ===
+    ├── SsoServerApp.java                           # Server 启动类 (端口 8080)
+    ├── config/
+    │   └── SaTokenServerConfig.java                # 路由拦截器配置
+    ├── controller/
+    │   └── SsoServerController.java                # 第三方登录页面 + OAuth 回调
+    └── auth/
+        ├── SsoServerAuthService.java               # 本地账号密码认证
+        └── ThirdPartyAuthService.java              # GitHub/微信/QQ OAuth 手动实现
+```
+
+### SSO 客户端（sso-client 模块）
+
+```
+com.example.ssoclient/
+├── SsoClientApplication.java                      # Client 启动类 (端口 8081)
+├── config/
+│   └── SsoClientConfig.java                        # SaInterceptor 拦截器
+└── controller/
+    └── HomeController.java                         # 首页（展示登录用户）
 ```
 
 ---

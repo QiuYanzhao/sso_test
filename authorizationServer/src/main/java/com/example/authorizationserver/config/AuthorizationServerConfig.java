@@ -11,6 +11,7 @@ import org.springframework.security.oauth2.server.authorization.client.InMemoryR
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
 import org.springframework.security.oauth2.server.authorization.config.ClientSettings;
+import org.springframework.security.oauth2.server.authorization.config.ProviderSettings;
 import org.springframework.security.oauth2.server.authorization.config.TokenSettings;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
@@ -101,8 +102,8 @@ public class AuthorizationServerConfig {
     public RegisteredClientRepository registeredClientRepository() {
         // 示例客户端 1：Web 应用
         RegisteredClient clientApp1 = RegisteredClient.withId(UUID.randomUUID().toString())
-                .clientId("app-client-1")
-                .clientSecret("{noop}secret1")
+                .clientId("app-client-1") // App A 的"用户名"
+                .clientSecret("{noop}secret1") // App A 的"密码"
                 .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
                 // 授权码模式（最安全的 OAuth2 流程，适合有后端的客户端）
                 .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
@@ -151,5 +152,17 @@ public class AuthorizationServerConfig {
                 .build();
 
         return new InMemoryRegisteredClientRepository(clientApp1, clientApp2);
+    }
+
+    /**
+     * 认证服务器全局设置
+     *
+     * ProviderSettings 用于配置认证中心的 issuer URI 等元数据。
+     * - issuer：不设置时自动推断为请求的根路径
+     * - 生产环境建议显式指定 issuer，例如 .issuer("https://sso.example.com")
+     */
+    @Bean
+    public ProviderSettings providerSettings() {
+        return ProviderSettings.builder().build();
     }
 }

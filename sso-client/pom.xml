@@ -4,30 +4,38 @@
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.example</groupId>
-  <artifactId>sso_test</artifactId>
+  <artifactId>sso-client</artifactId>
   <version>0.0.1-SNAPSHOT</version>
-  <name>sso_test</name>
-  <packaging>pom</packaging>
-  <description>sso_test</description>
-
-  <modules>
-    <module>authorizationServer</module>
-    <module>oidc-client</module>
-    <module>saToken</module>
-    <module>sso-client</module>
-  </modules>
+  <name>sso-client</name>
+  <description>SSO Client - 接入 Sa-Token SSO 认证中心的客户端</description>
   <properties>
     <java.version>1.8</java.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <spring-boot.version>2.6.13</spring-boot.version>
+    <sa-token.version>1.37.0</sa-token.version>
   </properties>
   <dependencies>
     <dependency>
       <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-starter</artifactId>
+      <artifactId>spring-boot-starter-web</artifactId>
     </dependency>
-
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-thymeleaf</artifactId>
+    </dependency>
+    <!-- Sa-Token 核心 -->
+    <dependency>
+      <groupId>cn.dev33</groupId>
+      <artifactId>sa-token-spring-boot-starter</artifactId>
+      <version>${sa-token.version}</version>
+    </dependency>
+    <!-- Sa-Token SSO 插件（客户端侧） -->
+    <dependency>
+      <groupId>cn.dev33</groupId>
+      <artifactId>sa-token-sso</artifactId>
+      <version>${sa-token.version}</version>
+    </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-test</artifactId>
@@ -62,20 +70,7 @@
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-maven-plugin</artifactId>
         <version>${spring-boot.version}</version>
-        <configuration>
-          <mainClass>com.example.sso_test.SsoTestApplication</mainClass>
-          <skip>true</skip>
-        </configuration>
-        <executions>
-          <execution>
-            <id>repackage</id>
-            <goals>
-              <goal>repackage</goal>
-            </goals>
-          </execution>
-        </executions>
       </plugin>
     </plugins>
   </build>
-
 </project>

@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OIDC 客户端 - 首页</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #f5f5f5; min-height: 100vh;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff; padding: 16px 32px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .header h1 { font-size: 18px; }
+        .header .user-info { font-size: 14px; }
+        .header .btn-logout {
+            background: rgba(255,255,255,0.2); color: #fff;
+            border: 1px solid rgba(255,255,255,0.3);
+            padding: 6px 16px; border-radius: 4px;
+            font-size: 13px; text-decoration: none;
+        }
+        .container { max-width: 800px; margin: 40px auto; padding: 0 20px; }
+        .card {
+            background: #fff; border-radius: 8px; padding: 24px;
+            margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        .card h3 { margin-bottom: 12px; color: #333; font-size: 16px; }
+        .card p { color: #666; font-size: 14px; line-height: 1.6; }
+        .card table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+        .card table td { padding: 6px 8px; border-bottom: 1px solid #f0f0f0; font-size: 13px; }
+        .card table td:first-child { color: #999; width: 100px; }
+        .token-value {
+            background: #f0f0f0; padding: 8px 12px; border-radius: 4px;
+            font-family: monospace; font-size: 11px; word-break: break-all;
+            color: #555; max-height: 200px; overflow-y: auto;
+        }
+        .badge {
+            display: inline-block; padding: 2px 8px; border-radius: 10px;
+            font-size: 11px; background: #e8f5e9; color: #2e7d32; margin-left: 8px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h1>OIDC 客户端 <span class="badge">已接入 SSO</span></h1>
+    <div class="user-info">
+        <span th:text="${name}">用户名</span>
+        <a th:href="@{/logout}" class="btn-logout">退出登录</a>
+    </div>
+</div>
+
+<div class="container">
+    <div class="card">
+        <h3>欢迎，<span th:text="${name}">用户名</span>！</h3>
+        <p>您已通过 <strong>Spring Authorization Server OIDC</strong> 完成单点登录。</p>
+    </div>
+
+    <div class="card">
+        <h3>id_token Claims（用户身份声明）</h3>
+        <table>
+            <tr><td>sub</td><td th:text="${subject}">-</td></tr>
+            <tr><td>email</td><td th:text="${email}">-</td></tr>
+            <tr th:each="claim : ${claims}">
+                <td th:text="${claim.key}">key</td>
+                <td th:text="${claim.value}">value</td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="card">
+        <h3>id_token（原始 JWT）</h3>
+        <div class="token-value" th:text="${idToken}">token...</div>
+    </div>
+
+    <div class="card">
+        <h3>认证流程</h3>
+        <p>
+            ① 访问 http://localhost:8081<br>
+            ② 未登录，302 到认证中心 /oauth2/authorize<br>
+            ③ 在认证中心登录（admin/123456）<br>
+            ④ 302 带回 authorization code<br>
+            ⑤ 客户端后端用 code 换 access_token + id_token<br>
+            ⑥ 登录完成，显示此页面
+        </p>
+    </div>
+</div>
+
+</body>
+</html>

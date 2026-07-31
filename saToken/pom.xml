@@ -71,7 +71,7 @@
         <artifactId>spring-boot-maven-plugin</artifactId>
         <version>${spring-boot.version}</version>
         <configuration>
-          <mainClass>com.example.satoken.SaTokenApplication</mainClass>
+          <mainClass>com.example.satoken.sso.server.SsoServerApp</mainClass>
           <skip>true</skip>
         </configuration>
         <executions>

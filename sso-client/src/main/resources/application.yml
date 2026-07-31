@@ -1,0 +1,35 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: sso-client
+  thymeleaf:
+    cache: false
+
+# ===== Sa-Token SSO 客户端配置（模式三：Http 请求调用）=====
+sa-token:
+  token-name: sso-token
+  timeout: 86400
+  activity-timeout: -1
+  is-concurrent: true
+
+  sso:
+    enable: true
+    # 认证中心地址（指向 saToken 模块的 SsoServerApp）
+    auth-url: http://localhost:8080
+    # Ticket 有效期（秒，需与 Server 一致）
+    ticket-timeout: 300
+    # 启用 Http 模式（模式三）：后端 Http 调用校验 ticket
+    is-http: true
+    # 启用单点注销
+    is-slo: true
+    # 校验签名
+    is-v-mode: true
+    # SSO API 密钥（需与 Server 一致）
+    secret-key: my-sso-secret-key-2024
+
+logging:
+  level:
+    cn.dev33: DEBUG
+    com.example: DEBUG
