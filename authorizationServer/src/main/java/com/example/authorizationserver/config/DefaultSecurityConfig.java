@@ -4,14 +4,17 @@ import com.example.authorizationserver.service.ThirdPartyUserService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+import org.springframework.security.web.util.matcher.OrRequestMatcher;
 
 /**
  * Spring Security 全局安全配置
@@ -43,7 +46,7 @@ public class DefaultSecurityConfig {
      */
     @Bean
     public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
+        return PasswordEncoderFactories.createDelegatingPasswordEncoder();
     }
 
     /**
@@ -114,6 +117,10 @@ public class DefaultSecurityConfig {
             .logout(logout ->
                 logout
                     .logoutUrl("/logout")
+                    // 同时支持 GET：客户端本地退出后会重定向到这里，清除 SSO 全局会话
+                    .logoutRequestMatcher(new OrRequestMatcher(
+                            new AntPathRequestMatcher("/logout", HttpMethod.GET.name()),
+                            new AntPathRequestMatcher("/logout", HttpMethod.POST.name())))
                     .logoutSuccessUrl("/login?logout")
                     .permitAll()
             )

@@ -22,11 +22,12 @@ public class ClientSecurityConfig {
                 .clientSecret("secret1")
                 .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
                 .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
-                .redirectUri("{baseUrl}/login/oauth2/code/{registrationId}")
+                .redirectUri("http://127.0.0.1:8081/login/oauth2/code/{registrationId}")
                 .scope("openid", "profile", "email")
                 .authorizationUri("http://localhost:8080/oauth2/authorize")
                 .tokenUri("http://localhost:8080/oauth2/token")
-                .userInfoUri("http://localhost:8080/userinfo")
+                // 不配置 userInfoUri：SAS 0.2.3 的 /userinfo 端点有缺陷（500），
+                // 客户端改用 ID Token 的 claims 即可完成登录
                 .jwkSetUri("http://localhost:8080/oauth2/jwks")
                 .userNameAttributeName(IdTokenClaimNames.SUB)
                 .clientName("OIDC SSO Client")
@@ -51,7 +52,10 @@ public class ClientSecurityConfig {
                 oauth2Login.defaultSuccessUrl("/", true)
             )
             .logout(logout ->
-                logout.logoutSuccessUrl("/").permitAll(false)
+                logout
+                    // 客户端本地退出后，再跳到认证中心 /logout，清除 SSO 全局会话
+                    .logoutSuccessUrl("http://localhost:8080/logout")
+                    .permitAll(false)
             );
 
         return http.build();

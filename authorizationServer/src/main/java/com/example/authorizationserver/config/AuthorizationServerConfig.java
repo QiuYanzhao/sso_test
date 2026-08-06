@@ -63,7 +63,11 @@ public class AuthorizationServerConfig {
             .requestMatcher(endpointsMatcher)
             // 协议端点需要认证才能访问（确保用户已登录）
             .authorizeRequests(authorizeRequests ->
-                authorizeRequests.anyRequest().authenticated()
+                authorizeRequests
+                    // /userinfo 由 OidcUserInfoEndpointFilter 处理（注册在 FilterSecurityInterceptor 之后），
+                    // 必须先放行，否则会被 anyRequest().authenticated() 拦截并重定向到登录页
+                    .antMatchers("/userinfo").permitAll()
+                    .anyRequest().authenticated()
             )
             // 未认证时重定向到登录页（实现 SSO 的关键：用户在此完成统一认证）
             .exceptionHandling(exceptions ->
@@ -112,8 +116,8 @@ public class AuthorizationServerConfig {
                 // 客户端凭证模式（服务间调用，不涉及用户）
                 .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
                 // 授权码回调地址（客户端接收 code 的地址）
-                .redirectUri("http://localhost:8081/login/oauth2/code/app-client")
-                .redirectUri("http://localhost:8081/callback")
+                .redirectUri("http://127.0.0.1:8081/login/oauth2/code/app-client")
+                .redirectUri("http://127.0.0.1:8081/callback")
                 // OIDC scope：必须包含 openid
                 .scope(OidcScopes.OPENID)
                 .scope(OidcScopes.PROFILE)
@@ -138,8 +142,8 @@ public class AuthorizationServerConfig {
                 .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
                 .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
                 .authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)
-                .redirectUri("http://localhost:8082/login/oauth2/code/app-client")
-                .redirectUri("http://localhost:8082/callback")
+                .redirectUri("http://127.0.0.1:8082/login/oauth2/code/app-client")
+                .redirectUri("http://127.0.0.1:8082/callback")
                 .scope(OidcScopes.OPENID)
                 .scope(OidcScopes.PROFILE)
                 .clientSettings(ClientSettings.builder()
